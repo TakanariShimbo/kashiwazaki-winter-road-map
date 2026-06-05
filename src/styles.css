@@ -12,6 +12,9 @@ body {
 }
 #map { position: absolute; inset: 0; }
 
+/* 右上のズーム/現在地ボタンがヘッダーに隠れないよう下げる */
+.maplibregl-ctrl-top-right { top: 48px; }
+
 #header {
   position: absolute; top: 0; left: 0; right: 0; z-index: 6;
   background: linear-gradient(180deg, rgba(20, 40, 80, 0.93), rgba(20, 40, 80, 0.82));
