@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
-import { pinMode, haversine } from '../map/interaction'
+import { pinMode, haversine, enableMarkerPopupToggle } from '../map/interaction'
 import type { LngLat } from '../types'
 
 interface Props {
@@ -35,6 +35,7 @@ export default function PinPanel({ map, userPos, externalDest, onDestConsumed }:
   const [pin, setPin] = useState<LngLat | null>(null)
   const [addr, setAddr] = useState<string | null>(null)
   const markerRef = useRef<maplibregl.Marker | null>(null)
+  const popupRef = useRef<maplibregl.Popup | null>(null)
 
   // 設置モードのON/OFFを共有フラグ＆カーソルに反映
   useEffect(() => {
@@ -49,6 +50,11 @@ export default function PinPanel({ map, userPos, externalDest, onDestConsumed }:
     setAddr(label ?? null)
     if (!markerRef.current) {
       const mk = new maplibregl.Marker({ color: PIN_COLOR, draggable: true }).setLngLat(p).addTo(map)
+      // クリックで開くポップアップ（内容は下の useEffect で最新化）
+      const popup = new maplibregl.Popup({ offset: 30, maxWidth: '240px' })
+      mk.setPopup(popup)
+      enableMarkerPopupToggle(mk) // クリックで開閉
+      popupRef.current = popup
       mk.on('dragend', () => {
         const ll = mk.getLngLat()
         const np: LngLat = [ll.lng, ll.lat]
@@ -86,11 +92,36 @@ export default function PinPanel({ map, userPos, externalDest, onDestConsumed }:
   const clearPin = () => {
     markerRef.current?.remove()
     markerRef.current = null
+    popupRef.current = null
     setPin(null)
     setAddr(null)
   }
 
   const dist = pin && userPos ? haversine(userPos, pin) : null
+
+  // 目的地ピンのポップアップ内容を最新化（情報＋「目的地を解除」）
+  useEffect(() => {
+    if (!popupRef.current || !pin) return
+    const node = document.createElement('div')
+    node.className = 'dest-popup'
+    const t = document.createElement('div')
+    t.className = 'dp-title'
+    t.textContent = '📍 ' + (addr ?? `${pin[1].toFixed(5)}, ${pin[0].toFixed(5)}`)
+    const btn = document.createElement('button')
+    btn.className = 'dp-clear'
+    btn.textContent = '目的地を解除'
+    btn.addEventListener('click', () => clearPin())
+    node.append(t)
+    if (dist != null) {
+      const d = document.createElement('div')
+      d.className = 'dp-dist'
+      d.textContent = `現在地から直線 ${fmtDist(dist)}`
+      node.append(d)
+    }
+    node.append(btn)
+    popupRef.current.setDOMContent(node)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pin, addr, userPos])
 
   return (
     <section className="sb-section">

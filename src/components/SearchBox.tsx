@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import { KASHIWAZAKI } from '../config/layers'
+import { enableMarkerPopupToggle } from '../map/interaction'
 import type { LngLat } from '../types'
 
 interface Props {
@@ -76,22 +77,31 @@ export default function SearchBox({ map, onSetDestination }: Props) {
 
     const mk = new maplibregl.Marker({ color: '#e8341c' }).setLngLat(s.coord).addTo(map)
 
-    // ピンをタップで開くポップアップ（情報＋「目的地にする」）
+    // ピンをタップで開くポップアップ（情報＋2択：目的地に／解除）
     const node = document.createElement('div')
     node.className = 'search-popup'
     const title = document.createElement('div')
     title.className = 'sp-title'
     title.textContent = s.title
-    const btn = document.createElement('button')
-    btn.className = 'sp-set'
-    btn.textContent = '📍 ここを目的地にする'
-    btn.addEventListener('click', () => {
+
+    const actions = document.createElement('div')
+    actions.className = 'sp-actions'
+    const setBtn = document.createElement('button')
+    setBtn.className = 'sp-set'
+    setBtn.textContent = '📍 ここを目的地に'
+    setBtn.addEventListener('click', () => {
       onSetDestination(s.coord, s.title)
       clear() // 検索ピンは消して目的地ピンに置き換える
     })
-    node.append(title, btn)
+    const delBtn = document.createElement('button')
+    delBtn.className = 'sp-del'
+    delBtn.textContent = 'ピンを解除'
+    delBtn.addEventListener('click', () => clear())
+    actions.append(setBtn, delBtn)
+    node.append(title, actions)
     const popup = new maplibregl.Popup({ offset: 30, maxWidth: '240px' }).setDOMContent(node)
     mk.setPopup(popup)
+    enableMarkerPopupToggle(mk) // クリックで開閉（再タップで再表示）
 
     markerRef.current = mk
     setHasMarker(true)

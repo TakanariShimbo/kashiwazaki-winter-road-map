@@ -221,14 +221,21 @@ body {
 .maplibregl-popup-content td.k { color: var(--muted); padding-right: 8px; white-space: nowrap; }
 .maplibregl-popup-content .meta { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--hairline); color: var(--muted); font-size: 11px; }
 
-/* 検索ピンのポップアップ（情報＋目的地にする） */
-.search-popup { min-width: 150px; }
-.search-popup .sp-title { font-weight: 700; font-size: 13.5px; margin-bottom: 8px; padding-right: 14px; }
-.search-popup .sp-set {
+/* ピンのポップアップ（検索ピン／目的地ピン共通トーン） */
+.search-popup, .dest-popup { min-width: 160px; }
+.sp-title, .dp-title { font-weight: 700; font-size: 13.5px; margin-bottom: 8px; padding-right: 14px; }
+.dp-dist { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
+.sp-actions { display: flex; flex-direction: column; gap: 6px; }
+.sp-set {
   width: 100%; border: none; border-radius: 9px; cursor: pointer;
   background: var(--pin); color: #fff; padding: 8px 10px; font-size: 13px; font-weight: 600;
 }
-.search-popup .sp-set:hover { filter: brightness(1.06); }
+.sp-set:hover { filter: brightness(1.06); }
+.sp-del, .dp-clear {
+  width: 100%; border: 1px solid var(--hairline); border-radius: 9px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.6); color: var(--muted); padding: 7px 10px; font-size: 12.5px;
+}
+.sp-del:hover, .dp-clear:hover { border-color: var(--pin); color: var(--pin); }
 
 /* ===== レスポンシブ ===== */
 @media (max-width: 640px) {
