@@ -58,10 +58,13 @@ export default function PinPanel({ map, userPos }: Props) {
     reverseGeocode(p).then(setAddr)
   }
 
-  // 設置モード中のマップクリックでピンを置く／動かす
+  // 設置モード中のマップクリックでピンを置く。置いたら自動でモード解除。
   useEffect(() => {
     if (!active) return
-    const onClick = (e: maplibregl.MapMouseEvent) => placePin([e.lngLat.lng, e.lngLat.lat])
+    const onClick = (e: maplibregl.MapMouseEvent) => {
+      placePin([e.lngLat.lng, e.lngLat.lat])
+      setActive(false) // 1回設置したら設置モードを抜ける（再設定はボタンを再度押す）
+    }
     map.on('click', onClick)
     return () => { map.off('click', onClick) }
   }, [active, map])
