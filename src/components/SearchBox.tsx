@@ -87,24 +87,26 @@ export default function SearchBox({ map }: Props) {
 
   return (
     <div className="search" ref={boxRef}>
-      <svg className="search-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-        <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-      </svg>
-      <input
-        type="text"
-        value={query}
-        placeholder="場所・住所で検索"
-        autoComplete="off"
-        onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => items.length && setOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && items[0]) { e.preventDefault(); select(items[0]) }
-          if (e.key === 'Escape') clear()
-        }}
-      />
-      {(query || hasMarker) && (
-        <button className="search-clear" onClick={clear} aria-label="検索をクリア" title="クリア">×</button>
-      )}
+      <div className="search-field">
+        <svg className="search-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+          <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          type="text"
+          value={query}
+          placeholder="場所・住所で検索"
+          autoComplete="off"
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => items.length && setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && items[0]) { e.preventDefault(); select(items[0]) }
+            if (e.key === 'Escape') clear()
+          }}
+        />
+        {(query || hasMarker) && (
+          <button className="search-clear" onClick={clear} aria-label="検索をクリア" title="クリア">×</button>
+        )}
+      </div>
       {open && items.length > 0 && (
         <div id="suggest">
           {items.map((s, i) => (
