@@ -1,28 +1,8 @@
-import type maplibregl from 'maplibre-gl'
-
 /**
  * 目的地ピン設置モード中は、フィーチャのポップアップを抑制するための共有フラグ。
  * PinPanel が true/false を設定し、dataLayers のクリックハンドラが参照する。
  */
 export const pinMode = { active: false }
-
-/**
- * マーカーのクリックでポップアップを開閉できるようにする。
- * maplibre-gl のマーカーは標準ではクリックでポップアップを開かない（キー操作のみ）ため自前で付与。
- * ドラッグ直後のクリックではトグルしないようガードする。
- */
-export function enableMarkerPopupToggle(marker: maplibregl.Marker): void {
-  let dragged = false
-  marker.on('dragstart', () => { dragged = true })
-  marker.on('dragend', () => { window.setTimeout(() => { dragged = false }, 0) })
-  const el = marker.getElement()
-  el.style.cursor = 'pointer'
-  el.addEventListener('click', (e) => {
-    e.stopPropagation()
-    if (dragged) { dragged = false; return }
-    marker.togglePopup()
-  })
-}
 
 /** 2点間の直線距離（メートル, ハバーサイン） */
 export function haversine(a: [number, number], b: [number, number]): number {

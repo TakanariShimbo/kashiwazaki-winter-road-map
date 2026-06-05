@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import { KASHIWAZAKI } from '../config/layers'
-import { enableMarkerPopupToggle } from '../map/interaction'
 import type { LngLat } from '../types'
 
 interface Props {
@@ -100,8 +99,7 @@ export default function SearchBox({ map, onSetDestination }: Props) {
     actions.append(setBtn, delBtn)
     node.append(title, actions)
     const popup = new maplibregl.Popup({ offset: 30, maxWidth: '240px' }).setDOMContent(node)
-    mk.setPopup(popup)
-    enableMarkerPopupToggle(mk) // クリックで開閉（再タップで再表示）
+    mk.setPopup(popup) // クリックで開閉は maplibre 標準（_onMapClick）
 
     markerRef.current = mk
     setHasMarker(true)

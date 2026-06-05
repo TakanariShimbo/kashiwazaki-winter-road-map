@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
-import { pinMode, haversine, enableMarkerPopupToggle } from '../map/interaction'
+import { pinMode, haversine } from '../map/interaction'
 import type { LngLat } from '../types'
 
 interface Props {
@@ -52,8 +52,7 @@ export default function PinPanel({ map, userPos, externalDest, onDestConsumed }:
       const mk = new maplibregl.Marker({ color: PIN_COLOR, draggable: true }).setLngLat(p).addTo(map)
       // クリックで開くポップアップ（内容は下の useEffect で最新化）
       const popup = new maplibregl.Popup({ offset: 30, maxWidth: '240px' })
-      mk.setPopup(popup)
-      enableMarkerPopupToggle(mk) // クリックで開閉
+      mk.setPopup(popup) // クリックで開閉は maplibre 標準（_onMapClick）
       popupRef.current = popup
       mk.on('dragend', () => {
         const ll = mk.getLngLat()
