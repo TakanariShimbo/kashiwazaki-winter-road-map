@@ -24,3 +24,16 @@ export interface BasemapConfig {
 
 /** GeoJSON フィーチャの属性 */
 export type FeatureProps = Record<string, string | number | null>
+
+/** 経度, 緯度 */
+export type LngLat = [number, number]
+
+/** 線種 */
+export type LineDash = 'solid' | 'dashed' | 'dotted'
+
+/** ユーザがカスタマイズ可能なレイヤーの線スタイル */
+export interface LayerStyle {
+  color: string
+  width: number
+  dash: LineDash
+}

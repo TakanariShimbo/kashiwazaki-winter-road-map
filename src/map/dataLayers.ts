@@ -1,6 +1,7 @@
 import maplibregl from 'maplibre-gl'
 import { LAYERS, META, dataUrl } from '../config/layers'
-import type { LayerConfig, FeatureProps } from '../types'
+import { pinMode } from './interaction'
+import type { LayerConfig, FeatureProps, LayerStyle, LineDash } from '../types'
 
 /** sublayer の line / case レイヤーIDを返す */
 export const lineLayerId = (layerKey: string, i: number) => `lyr_${layerKey}_${i}`
@@ -41,6 +42,7 @@ export function addDataLayers(map: maplibregl.Map): void {
       })
 
       map.on('click', id, (e) => {
+        if (pinMode.active) return // ピン設置中はポップアップを抑制
         const props = (e.features?.[0]?.properties ?? {}) as FeatureProps
         new maplibregl.Popup({ maxWidth: '280px' })
           .setLngLat(e.lngLat)
@@ -59,5 +61,27 @@ export function setLayerVisibility(map: maplibregl.Map, layer: LayerConfig, visi
   layer.files.forEach((_, i) => {
     map.setLayoutProperty(lineLayerId(layer.key, i), 'visibility', vis)
     map.setLayoutProperty(caseLayerId(layer.key, i), 'visibility', vis)
+  })
+}
+
+// 線種 → line-dasharray（単位は線幅）。solid は null でリセット。
+const DASH_PATTERN: Record<LineDash, number[] | null> = {
+  solid: null,
+  dashed: [2, 1.5],
+  dotted: [0.4, 1.8],
+}
+
+/** ユーザ設定の色・太さ・線種をレイヤーへ適用（line と case 両方） */
+export function applyLayerStyle(map: maplibregl.Map, layer: LayerConfig, style: LayerStyle): void {
+  const dash = DASH_PATTERN[style.dash]
+  layer.files.forEach((_, i) => {
+    const id = lineLayerId(layer.key, i)
+    const caseId = caseLayerId(layer.key, i)
+    map.setPaintProperty(id, 'line-color', style.color)
+    map.setPaintProperty(id, 'line-width', style.width)
+    map.setPaintProperty(caseId, 'line-width', style.width + 2)
+    // 破線時は白い下地も同じパターンで抜く
+    map.setPaintProperty(id, 'line-dasharray', dash)
+    map.setPaintProperty(caseId, 'line-dasharray', dash)
   })
 }
