@@ -41,7 +41,7 @@ export default function LayerPanel({ map, styles, onOpenSettings }: Props) {
                 style={{
                   borderTopColor: s.color,
                   borderTopStyle: borderStyleOf(s.dash),
-                  borderTopWidth: `${Math.max(3, s.width)}px`,
+                  borderTopWidth: `${Math.max(2, s.width)}px`,
                 }}
               />
               <span className="name">{l.name}</span>

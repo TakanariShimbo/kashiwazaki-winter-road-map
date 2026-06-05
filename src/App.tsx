@@ -7,8 +7,8 @@ import Sidebar from './components/Sidebar'
 import SettingsPanel from './components/SettingsPanel'
 import type { LngLat, LayerStyle } from './types'
 
-// 既定の配色スキームを変更したので v2 にバンプ（旧保存値は読まず新既定を適用）
-const STYLE_STORAGE_KEY = 'kw-layer-styles-v2'
+// 既定の配色/太さスキームを変更したので v3 にバンプ（旧保存値は読まず新既定を適用）
+const STYLE_STORAGE_KEY = 'kw-layer-styles-v3'
 
 function loadStyles(): Record<string, LayerStyle> {
   const def = defaultLayerStyles()
