@@ -11,6 +11,8 @@ export interface LayerConfig {
   files: string[]
   /** 初期表示 ON/OFF */
   defaultOn: boolean
+  /** 既定の線種 */
+  dash: LineDash
   /** ポップアップに出す属性キー（この順で表示） */
   fields: string[]
 }
