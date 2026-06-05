@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>柏崎 冬道マップ</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+  :root { --panel:#fff; --text:#1a2330; --muted:#6b7785; --accent:#2b6cff; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; font-family:system-ui,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; color:var(--text); }
+  #map { position:absolute; inset:0; }
+
+  #header {
+    position:absolute; top:0; left:0; right:0; z-index:6;
+    background:linear-gradient(180deg, rgba(20,40,80,.93), rgba(20,40,80,.82));
+    color:#fff; padding:8px 12px; backdrop-filter:blur(4px);
+    display:flex; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.2);
+  }
+  #header h1 { font-size:16px; margin:0; font-weight:700; white-space:nowrap; }
+
+  /* 検索 */
+  #search { position:relative; flex:1; max-width:420px; }
+  #search input {
+    width:100%; padding:7px 12px; border:none; border-radius:18px; font-size:13px;
+    background:#fff; color:var(--text); outline:none;
+  }
+  #suggest {
+    position:absolute; top:36px; left:0; right:0; background:#fff; color:var(--text);
+    border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.25); overflow:hidden; display:none;
+  }
+  #suggest div { padding:8px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid #f0f2f6; }
+  #suggest div:hover { background:#f3f7ff; }
+  #suggest div small { color:var(--muted); }
+  #header .sub { font-size:11px; opacity:.85; white-space:nowrap; }
+
+  .card { position:absolute; z-index:5; background:var(--panel); border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,.18); font-size:13px; }
+  #layers { top:52px; left:10px; width:190px; padding:10px 12px; }
+  #basemaps { bottom:28px; left:10px; padding:8px 10px; max-width:240px; }
+  .card h2 { font-size:11px; margin:0 0 7px; color:var(--muted); font-weight:700; letter-spacing:.04em; }
+  .row { display:flex; align-items:center; gap:8px; padding:5px 0; cursor:pointer; user-select:none; }
+  .row input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+  .swatch { width:22px; border-top:4px solid; border-radius:2px; flex:0 0 auto; }
+  .row .name { flex:1; }
+  .seg { display:flex; flex-wrap:wrap; gap:4px; }
+  .seg button { border:1px solid #d0d7e2; background:#fff; color:var(--text); padding:5px 9px; border-radius:8px; font-size:12px; cursor:pointer; }
+  .seg button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  #credit { position:absolute; bottom:0; left:0; right:0; z-index:4; background:rgba(255,255,255,.92); color:var(--muted); font-size:10px; padding:3px 10px; }
+  .maplibregl-popup-content { font-size:13px; line-height:1.6; border-radius:10px; }
+  .maplibregl-popup-content .pt { font-weight:700; color:var(--accent); margin-bottom:3px; }
+  .maplibregl-popup-content td.k { color:var(--muted); padding-right:8px; white-space:nowrap; }
+  .maplibregl-popup-content .meta { margin-top:5px; padding-top:5px; border-top:1px solid #eee; color:var(--muted); font-size:11px; }
+
+  @media (max-width:560px){ #header h1{font-size:14px;} #header .sub{display:none;} #layers{width:160px;} }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>❄ 柏崎 冬道マップ</h1>
+  <div id="search">
+    <input id="q" type="text" placeholder="場所・住所で検索（例：東本町、柏崎市役所）" autocomplete="off">
+    <div id="suggest"></div>
+  </div>
+  <span class="sub">MapLibre + 地理院</span>
+</div>
+
+<div id="layers" class="card">
+  <h2>レイヤー</h2>
+  <div id="layerList"></div>
+</div>
+
+<div id="basemaps" class="card">
+  <h2>背景地図（タイル）</h2>
+  <div class="seg" id="baseSeg">
+    <button data-base="pale" class="active">淡色</button>
+    <button data-base="std">標準</button>
+    <button data-base="photo">航空写真</button>
+    <button data-base="blank">白地図</button>
+    <button data-base="osm">OSM</button>
+  </div>
+</div>
+
+<div id="credit">出典：柏崎市オープンデータ（CC-BY 4.0／令和6年12月時点）｜背景：地理院タイル／OpenStreetMap｜検索：地理院</div>
+<div id="map"></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+const GSI_ATTR = '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>';
+const OSM_ATTR = '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors';
+// 背景タイル定義（無料・APIキー不要）
+const BASES = {
+  pale:  { tiles:['https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'],          attr:GSI_ATTR },
+  std:   { tiles:['https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png'],           attr:GSI_ATTR },
+  photo: { tiles:['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'], attr:GSI_ATTR },
+  blank: { tiles:['https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png'],         attr:GSI_ATTR },
+  osm:   { tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],                     attr:OSM_ATTR },
+};
+const KASHIWAZAKI = [138.5589, 37.3716];
+
+const sources = {}, baseLayers = [];
+for(const [k,v] of Object.entries(BASES)){
+  sources['base_'+k] = { type:'raster', tiles:v.tiles, tileSize:256, attribution:v.attr, maxzoom:18 };
+  baseLayers.push({ id:'base_'+k, type:'raster', source:'base_'+k, layout:{ visibility: k==='pale'?'visible':'none' } });
+}
+
+const map = new maplibregl.Map({
+  container:'map', center:KASHIWAZAKI, zoom:13,
+  style:{ version:8, sources, layers:baseLayers },
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }), 'top-right');
+map.addControl(new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true }), 'top-right');
+map.addControl(new maplibregl.ScaleControl({ unit:'metric' }), 'bottom-left');
+
+// 冬道レイヤー
+const LAYERS = [
+  { key:'hodo',   name:'歩道除雪',     color:'#1aa84a', width:3,   files:['hodo'], on:false, fields:['路線名','水準','除雪路線延長'] },
+  { key:'josetsu',name:'除雪路線',     color:'#7b3ff2', width:2.5, files:['josetsu','josetsu_takayanagi','josetsu_nishiyama'], on:false, fields:['路線名','区分','路線種別','除雪路線延長'] },
+  { key:'kinkyu', name:'緊急確保路線', color:'#ff6a00', width:4,   files:['kinkyu'], on:false, fields:['路線名','区分','路線種別','除雪路線延長','その他必要情報'] },
+  { key:'pipe',   name:'消雪パイプ',   color:'#0a84ff', width:3.5, files:['shosetsu_pipe'], on:true, fields:['路線名','管理番号','施設番号','設置場所'] },
+];
+const META = { source:'柏崎市オープンデータ', license:'CC-BY 4.0', base:'令和6年12月時点' };
+function popupHtml(layer, p){
+  let rows='';
+  for(const f of layer.fields){ let v=p[f]; if(v==null||v==='') continue; if(f==='除雪路線延長') v=v+' m'; rows+=`<tr><td class="k">${f}</td><td>${v}</td></tr>`; }
+  return `<div class="pt">${layer.name}</div><table>${rows}</table><div class="meta">出典：${META.source}<br>基準日：${META.base}／${META.license}</div>`;
+}
+map.on('load', () => {
+  for(const layer of LAYERS){
+    layer.files.forEach((file,i) => {
+      const src=`${layer.key}_${i}`, id=`lyr_${layer.key}_${i}`;
+      map.addSource(src, { type:'geojson', data:`data/${file}.geojson` });
+      map.addLayer({ id:id+'_case', type:'line', source:src, layout:{'line-cap':'round', visibility:layer.on?'visible':'none'}, paint:{'line-color':'#fff','line-width':layer.width+2,'line-opacity':0.6} });
+      map.addLayer({ id, type:'line', source:src, layout:{'line-cap':'round', visibility:layer.on?'visible':'none'}, paint:{'line-color':layer.color,'line-width':layer.width,'line-opacity':0.95} });
+      map.on('click', id, e => new maplibregl.Popup({maxWidth:'280px'}).setLngLat(e.lngLat).setHTML(popupHtml(layer, e.features[0].properties||{})).addTo(map));
+      map.on('mouseenter', id, ()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave', id, ()=>map.getCanvas().style.cursor='');
+    });
+  }
+});
+
+// レイヤートグル
+const list=document.getElementById('layerList');
+for(const layer of LAYERS){
+  const row=document.createElement('label'); row.className='row';
+  row.innerHTML=`<input type="checkbox" ${layer.on?'checked':''}><span class="swatch" style="border-top-color:${layer.color}"></span><span class="name">${layer.name}</span>`;
+  row.querySelector('input').addEventListener('change', e=>{
+    const vis=e.target.checked?'visible':'none';
+    layer.files.forEach((_,i)=>{ map.setLayoutProperty(`lyr_${layer.key}_${i}`,'visibility',vis); map.setLayoutProperty(`lyr_${layer.key}_${i}_case`,'visibility',vis); });
+  });
+  list.appendChild(row);
+}
+
+// 背景タイル切替
+document.getElementById('baseSeg').addEventListener('click', e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('#baseSeg button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  for(const k of Object.keys(BASES)) map.setLayoutProperty('base_'+k,'visibility', k===btn.dataset.base?'visible':'none');
+});
+
+// ===== 場所検索（地理院 AddressSearch・柏崎中心で近い順ソート）=====
+const q=document.getElementById('q'), suggest=document.getElementById('suggest');
+let searchMarker=null, timer=null;
+function dist(a,b){ const dx=a[0]-b[0], dy=a[1]-b[1]; return dx*dx+dy*dy; }
+async function runSearch(text){
+  if(!text.trim()){ suggest.style.display='none'; return; }
+  try{
+    const res=await fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q='+encodeURIComponent(text));
+    let items=await res.json();
+    items.sort((a,b)=>dist(a.geometry.coordinates,KASHIWAZAKI)-dist(b.geometry.coordinates,KASHIWAZAKI));
+    items=items.slice(0,6);
+    if(!items.length){ suggest.innerHTML='<div><small>該当なし</small></div>'; suggest.style.display='block'; return; }
+    suggest.innerHTML='';
+    for(const it of items){
+      const c=it.geometry.coordinates, near=dist(c,KASHIWAZAKI)<0.04;
+      const d=document.createElement('div');
+      d.innerHTML=`${it.properties.title} ${near?'':'<small>（柏崎市外）</small>'}`;
+      d.addEventListener('click', ()=>{
+        map.flyTo({center:c, zoom:16, duration:1200});
+        if(searchMarker) searchMarker.remove();
+        searchMarker=new maplibregl.Marker({color:'#e8341c'}).setLngLat(c).addTo(map);
+        suggest.style.display='none'; q.value=it.properties.title;
+      });
+      suggest.appendChild(d);
+    }
+    suggest.style.display='block';
+  }catch(err){ console.error(err); }
+}
+q.addEventListener('input', ()=>{ clearTimeout(timer); timer=setTimeout(()=>runSearch(q.value), 300); });
+q.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); const first=suggest.querySelector('div'); if(first) first.click(); } });
+document.addEventListener('click', e=>{ if(!document.getElementById('search').contains(e.target)) suggest.style.display='none'; });
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "source": "柏崎市オープンデータ",
+  "source_url": "https://open-data-kashiwazaki.opendata.arcgis.com/",
+  "license": "CC-BY 4.0",
+  "base_date": "令和6年12月時点（2024-12-13）",
+  "layers": [
+    {
+      "file": "shosetsu_pipe",
+      "label": "消雪パイプ",
+      "count": 265
+    },
+    {
+      "file": "josetsu",
+      "label": "除雪路線",
+      "count": 1816
+    },
+    {
+      "file": "josetsu_takayanagi",
+      "label": "除雪路線（高柳）",
+      "count": 83
+    },
+    {
+      "file": "josetsu_nishiyama",
+      "label": "除雪路線（西山）",
+      "count": 288
+    },
+    {
+      "file": "kinkyu",
+      "label": "緊急確保路線",
+      "count": 138
+    },
+    {
+      "file": "hodo",
+      "label": "歩道除雪",
+      "count": 309
+    }
+  ]
+}

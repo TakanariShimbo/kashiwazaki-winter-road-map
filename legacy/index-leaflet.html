@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>柏崎 冬道マップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root { --bg:#f5f7fa; --panel:#fff; --text:#1a2330; --muted:#6b7785; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; font-family: system-ui, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; color:var(--text); }
+  #map { position:absolute; inset:0; }
+
+  /* ヘッダー */
+  #header {
+    position:absolute; top:0; left:0; right:0; z-index:1000;
+    background:linear-gradient(180deg, rgba(20,40,80,.92), rgba(20,40,80,.78));
+    color:#fff; padding:10px 14px; backdrop-filter:blur(4px);
+    display:flex; align-items:baseline; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,.2);
+  }
+  #header h1 { font-size:17px; margin:0; font-weight:700; letter-spacing:.02em; }
+  #header .sub { font-size:11px; opacity:.85; }
+
+  /* レイヤーパネル */
+  #panel {
+    position:absolute; top:58px; left:10px; z-index:1000;
+    background:var(--panel); border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,.18);
+    padding:10px 12px; width:200px; font-size:13px;
+  }
+  #panel h2 { font-size:12px; margin:0 0 8px; color:var(--muted); font-weight:700; letter-spacing:.04em; }
+  .layer-row { display:flex; align-items:center; gap:8px; padding:5px 0; cursor:pointer; user-select:none; }
+  .layer-row input { width:16px; height:16px; accent-color:#2b6cff; cursor:pointer; }
+  .swatch { width:22px; height:0; border-top-width:4px; border-top-style:solid; border-radius:2px; flex:0 0 auto; }
+  .swatch.dash { border-top-style:dashed; }
+  .layer-row .name { flex:1; }
+  .layer-row .cnt { color:var(--muted); font-size:11px; }
+
+  /* 出典フッター */
+  #credit {
+    position:absolute; bottom:0; left:0; right:0; z-index:1000;
+    background:rgba(255,255,255,.92); color:var(--muted); font-size:10.5px;
+    padding:5px 10px; line-height:1.5; backdrop-filter:blur(2px);
+  }
+  #credit b { color:var(--text); }
+  #credit a { color:#2b6cff; text-decoration:none; }
+
+  /* 免責バナー */
+  #disclaimer {
+    position:absolute; top:58px; right:10px; z-index:1000; max-width:260px;
+    background:#fff7e6; border:1px solid #ffd591; border-radius:10px;
+    padding:8px 28px 8px 10px; font-size:11.5px; line-height:1.55; color:#874d00;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+  }
+  #disclaimer .x { position:absolute; top:4px; right:6px; cursor:pointer; color:#b37200; font-weight:700; font-size:14px; }
+
+  .leaflet-popup-content { font-size:13px; line-height:1.6; }
+  .leaflet-popup-content .pt { font-weight:700; color:#2b6cff; margin-bottom:3px; }
+  .leaflet-popup-content table { border-collapse:collapse; }
+  .leaflet-popup-content td { padding:1px 6px 1px 0; vertical-align:top; }
+  .leaflet-popup-content td.k { color:var(--muted); white-space:nowrap; }
+  .leaflet-popup-content .meta { margin-top:6px; padding-top:6px; border-top:1px solid #eee; color:var(--muted); font-size:11px; }
+
+  @media (max-width:520px){
+    #panel { width:170px; top:54px; }
+    #disclaimer { display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>❄ 柏崎 冬道マップ</h1>
+  <span class="sub" id="basedate"></span>
+</div>
+
+<div id="panel">
+  <h2>レイヤー</h2>
+  <div id="layers"></div>
+</div>
+
+<div id="disclaimer">
+  <span class="x" onclick="this.parentNode.style.display='none'">×</span>
+  この地図は除雪・消雪の<b>路線情報</b>です。実際の路面状況や通行可否を保証するものではありません。
+</div>
+
+<div id="credit">
+  出典：<b>柏崎市オープンデータ</b>（道路維持課）／ライセンス CC-BY 4.0／基準日 令和6年12月時点
+  背景地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院（地理院タイル）</a>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map', { center:[37.3716, 138.5589], zoom:13, zoomControl:true });
+L.control.scale({ imperial:false }).addTo(map);
+
+// 背景：地理院 淡色地図
+L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
+  attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
+  maxZoom: 18
+}).addTo(map);
+
+// レイヤー定義（描画順は配列順 = 下から上）
+const LAYERS = [
+  { key:'hodo',   name:'歩道除雪',     color:'#1aa84a', weight:3, dash:null,  files:['hodo'],
+    defaultOn:false, fields:['路線名','水準','除雪路線延長'] },
+  { key:'josetsu',name:'除雪路線',     color:'#7b3ff2', weight:2.5, dash:null, files:['josetsu','josetsu_takayanagi','josetsu_nishiyama'],
+    defaultOn:false, fields:['路線名','区分','路線種別','除雪路線延長'] },
+  { key:'kinkyu', name:'緊急確保路線', color:'#ff6a00', weight:4, dash:null,  files:['kinkyu'],
+    defaultOn:false, fields:['路線名','区分','路線種別','除雪路線延長','その他必要情報'] },
+  { key:'pipe',   name:'消雪パイプ',   color:'#0a84ff', weight:3.5, dash:null, files:['shosetsu_pipe'],
+    defaultOn:true,  fields:['路線名','管理番号','施設番号','設置場所'] },
+];
+
+const META = { source:'柏崎市オープンデータ', license:'CC-BY 4.0', base:'令和6年12月時点' };
+document.getElementById('basedate').textContent = '基準日：' + META.base + '・出典：柏崎市オープンデータ(CC-BY)';
+
+function popupHtml(layer, props){
+  let rows = '';
+  for(const f of layer.fields){
+    let v = props[f];
+    if(v === undefined || v === null || v === '') continue;
+    if(f === '除雪路線延長') v = v + ' m';
+    rows += `<tr><td class="k">${f}</td><td>${v}</td></tr>`;
+  }
+  return `<div class="pt">${layer.name}</div>
+    <table>${rows}</table>
+    <div class="meta">出典：${META.source}<br>基準日：${META.base}／${META.license}</div>`;
+}
+
+const groups = {}; // key -> L.layerGroup
+const counts = {}; // key -> feature count
+
+async function loadLayer(layer){
+  const group = L.layerGroup();
+  groups[layer.key] = group;
+  let total = 0;
+  for(const file of layer.files){
+    try {
+      const res = await fetch(`data/${file}.geojson`);
+      const gj = await res.json();
+      total += gj.features.length;
+      L.geoJSON(gj, {
+        style: { color:layer.color, weight:layer.weight, opacity:0.9,
+                 dashArray: layer.dash, lineCap:'round' },
+        onEachFeature: (feat, lyr) => lyr.bindPopup(popupHtml(layer, feat.properties || {}))
+      }).addTo(group);
+    } catch(e){ console.error('load failed', file, e); }
+  }
+  counts[layer.key] = total;
+  if(layer.defaultOn) group.addTo(map);
+  updateCount(layer.key, total);
+}
+
+// パネル UI 構築
+const panel = document.getElementById('layers');
+for(const layer of LAYERS){
+  const row = document.createElement('label');
+  row.className = 'layer-row';
+  row.innerHTML = `
+    <input type="checkbox" ${layer.defaultOn ? 'checked' : ''} data-key="${layer.key}">
+    <span class="swatch ${layer.dash?'dash':''}" style="border-top-color:${layer.color}"></span>
+    <span class="name">${layer.name}</span>
+    <span class="cnt" id="cnt-${layer.key}">…</span>`;
+  row.querySelector('input').addEventListener('change', (e) => {
+    const g = groups[layer.key];
+    if(!g) return;
+    if(e.target.checked) g.addTo(map); else map.removeLayer(g);
+  });
+  panel.appendChild(row);
+}
+function updateCount(key, n){
+  const el = document.getElementById('cnt-'+key);
+  if(el) el.textContent = n + '本';
+}
+
+// 描画順：配列順にロード（消雪パイプが最前面）
+(async () => {
+  for(const layer of LAYERS){ await loadLayer(layer); }
+})();
+</script>
+</body>
+</html>
