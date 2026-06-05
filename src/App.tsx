@@ -30,6 +30,7 @@ export default function App() {
   const [styles, setStyles] = useState<Record<string, LayerStyle>>(loadStyles)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 820)
+  const [destReq, setDestReq] = useState<{ coord: LngLat; label: string } | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -90,6 +91,9 @@ export default function App() {
           open={sidebarOpen}
           onToggle={() => setSidebarOpen((o) => !o)}
           onOpenSettings={() => setSettingsOpen(true)}
+          onSetDestination={(coord, label) => setDestReq({ coord, label })}
+          externalDest={destReq}
+          onDestConsumed={() => setDestReq(null)}
         />
       )}
       {settingsOpen && (

@@ -12,9 +12,15 @@ interface Props {
   open: boolean
   onToggle: () => void
   onOpenSettings: () => void
+  onSetDestination: (coord: LngLat, label: string) => void
+  externalDest: { coord: LngLat; label: string } | null
+  onDestConsumed: () => void
 }
 
-export default function Sidebar({ map, styles, userPos, open, onToggle, onOpenSettings }: Props) {
+export default function Sidebar({
+  map, styles, userPos, open, onToggle, onOpenSettings,
+  onSetDestination, externalDest, onDestConsumed,
+}: Props) {
   return (
     <>
       <button className={`sb-fab ${open ? 'hidden' : ''}`} onClick={onToggle} aria-label="メニューを開く">☰</button>
@@ -29,10 +35,10 @@ export default function Sidebar({ map, styles, userPos, open, onToggle, onOpenSe
           <button className="icon-btn sb-collapse" onClick={onToggle} aria-label="閉じる">‹</button>
         </div>
 
-        <SearchBox map={map} />
+        <SearchBox map={map} onSetDestination={onSetDestination} />
         <LayerPanel map={map} styles={styles} onOpenSettings={onOpenSettings} />
         <BasemapSwitcher map={map} />
-        <PinPanel map={map} userPos={userPos} />
+        <PinPanel map={map} userPos={userPos} externalDest={externalDest} onDestConsumed={onDestConsumed} />
 
         <div className="sb-credit">
           出典：柏崎市オープンデータ（CC-BY 4.0／令和6年12月時点）<br />

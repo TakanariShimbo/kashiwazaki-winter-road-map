@@ -7,6 +7,10 @@ interface Props {
   map: maplibregl.Map
   /** 現在地（GPS）。直線距離の算出に使用 */
   userPos: LngLat | null
+  /** 検索ピンから「目的地にする」で渡される地点（座標＋ラベル） */
+  externalDest: { coord: LngLat; label: string } | null
+  /** externalDest を反映し終えたら呼ぶ */
+  onDestConsumed: () => void
 }
 
 const PIN_COLOR = '#d81b60'
@@ -26,7 +30,7 @@ async function reverseGeocode(p: LngLat): Promise<string | null> {
 
 const fmtDist = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`)
 
-export default function PinPanel({ map, userPos }: Props) {
+export default function PinPanel({ map, userPos, externalDest, onDestConsumed }: Props) {
   const [active, setActive] = useState(false)
   const [pin, setPin] = useState<LngLat | null>(null)
   const [addr, setAddr] = useState<string | null>(null)
@@ -39,24 +43,34 @@ export default function PinPanel({ map, userPos }: Props) {
     return () => { pinMode.active = false; map.getCanvas().style.cursor = '' }
   }, [active, map])
 
-  // ピンを置く（ドラッグで微調整可）。町名も取得。
-  const placePin = (p: LngLat) => {
+  // ピンを置く（ドラッグで微調整可）。label があればそれを住所表示に使い、なければ町名を取得。
+  const placePin = (p: LngLat, label?: string) => {
     setPin(p)
-    setAddr(null)
+    setAddr(label ?? null)
     if (!markerRef.current) {
       const mk = new maplibregl.Marker({ color: PIN_COLOR, draggable: true }).setLngLat(p).addTo(map)
       mk.on('dragend', () => {
         const ll = mk.getLngLat()
         const np: LngLat = [ll.lng, ll.lat]
         setPin(np)
+        setAddr(null)
         reverseGeocode(np).then(setAddr)
       })
       markerRef.current = mk
     } else {
       markerRef.current.setLngLat(p)
     }
-    reverseGeocode(p).then(setAddr)
+    if (!label) reverseGeocode(p).then(setAddr)
   }
+
+  // 検索ピンから「目的地にする」で渡された地点を反映
+  useEffect(() => {
+    if (!externalDest) return
+    placePin(externalDest.coord, externalDest.label)
+    setActive(false)
+    onDestConsumed()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalDest])
 
   // 設置モード中のマップクリックでピンを置く。置いたら自動でモード解除。
   useEffect(() => {

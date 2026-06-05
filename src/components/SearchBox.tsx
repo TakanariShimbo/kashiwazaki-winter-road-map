@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import { KASHIWAZAKI } from '../config/layers'
+import type { LngLat } from '../types'
 
 interface Props {
   map: maplibregl.Map | null
+  /** 検索ピンのポップアップから「目的地にする」を押したとき */
+  onSetDestination: (coord: LngLat, label: string) => void
 }
 
 interface Suggestion {
@@ -23,7 +26,7 @@ const sqDist = (a: [number, number], b: [number, number]) => {
   return dx * dx + dy * dy
 }
 
-export default function SearchBox({ map }: Props) {
+export default function SearchBox({ map, onSetDestination }: Props) {
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<Suggestion[]>([])
   const [open, setOpen] = useState(false)
@@ -70,10 +73,31 @@ export default function SearchBox({ map }: Props) {
     if (!map) return
     map.flyTo({ center: s.coord, zoom: 16, duration: 1200 })
     markerRef.current?.remove()
-    markerRef.current = new maplibregl.Marker({ color: '#e8341c' }).setLngLat(s.coord).addTo(map)
+
+    const mk = new maplibregl.Marker({ color: '#e8341c' }).setLngLat(s.coord).addTo(map)
+
+    // ピンをタップで開くポップアップ（情報＋「目的地にする」）
+    const node = document.createElement('div')
+    node.className = 'search-popup'
+    const title = document.createElement('div')
+    title.className = 'sp-title'
+    title.textContent = s.title
+    const btn = document.createElement('button')
+    btn.className = 'sp-set'
+    btn.textContent = '📍 ここを目的地にする'
+    btn.addEventListener('click', () => {
+      onSetDestination(s.coord, s.title)
+      clear() // 検索ピンは消して目的地ピンに置き換える
+    })
+    node.append(title, btn)
+    const popup = new maplibregl.Popup({ offset: 30, maxWidth: '240px' }).setDOMContent(node)
+    mk.setPopup(popup)
+
+    markerRef.current = mk
     setHasMarker(true)
     setQuery(s.title)
     setOpen(false)
+    mk.togglePopup() // 立てた直後に開く
   }
 
   const clear = () => {
