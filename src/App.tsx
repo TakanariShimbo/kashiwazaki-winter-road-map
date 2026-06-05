@@ -94,6 +94,7 @@ export default function App() {
           onSetDestination={(coord, label) => setDestReq({ coord, label })}
           externalDest={destReq}
           onDestConsumed={() => setDestReq(null)}
+          onCloseSidebar={() => setSidebarOpen(false)}
         />
       )}
       {settingsOpen && (

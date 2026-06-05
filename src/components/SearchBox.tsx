@@ -7,6 +7,8 @@ interface Props {
   map: maplibregl.Map | null
   /** 検索ピンのポップアップから「目的地にする」を押したとき */
   onSetDestination: (coord: LngLat, label: string) => void
+  /** 検索結果を選んで地図が移動するときに呼ぶ（サイドバーを閉じる用） */
+  onCloseSidebar: () => void
 }
 
 interface Suggestion {
@@ -26,7 +28,7 @@ const sqDist = (a: [number, number], b: [number, number]) => {
   return dx * dx + dy * dy
 }
 
-export default function SearchBox({ map, onSetDestination }: Props) {
+export default function SearchBox({ map, onSetDestination, onCloseSidebar }: Props) {
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<Suggestion[]>([])
   const [open, setOpen] = useState(false)
@@ -72,6 +74,7 @@ export default function SearchBox({ map, onSetDestination }: Props) {
   const select = (s: Suggestion) => {
     if (!map) return
     map.flyTo({ center: s.coord, zoom: 16, duration: 1200 })
+    onCloseSidebar() // 結果へ飛ぶときサイドバーを閉じて地図を見せる
     markerRef.current?.remove()
 
     const mk = new maplibregl.Marker({ color: '#e8341c' }).setLngLat(s.coord).addTo(map)

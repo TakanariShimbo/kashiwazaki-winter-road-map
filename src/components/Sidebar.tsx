@@ -15,11 +15,12 @@ interface Props {
   onSetDestination: (coord: LngLat, label: string) => void
   externalDest: { coord: LngLat; label: string } | null
   onDestConsumed: () => void
+  onCloseSidebar: () => void
 }
 
 export default function Sidebar({
   map, styles, userPos, open, onToggle, onOpenSettings,
-  onSetDestination, externalDest, onDestConsumed,
+  onSetDestination, externalDest, onDestConsumed, onCloseSidebar,
 }: Props) {
   return (
     <>
@@ -35,7 +36,7 @@ export default function Sidebar({
           <button className="icon-btn sb-collapse" onClick={onToggle} aria-label="閉じる">‹</button>
         </div>
 
-        <SearchBox map={map} onSetDestination={onSetDestination} />
+        <SearchBox map={map} onSetDestination={onSetDestination} onCloseSidebar={onCloseSidebar} />
         <LayerPanel map={map} styles={styles} onOpenSettings={onOpenSettings} />
         <BasemapSwitcher map={map} />
         <PinPanel map={map} userPos={userPos} externalDest={externalDest} onDestConsumed={onDestConsumed} />
