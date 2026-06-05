@@ -12,7 +12,6 @@ interface Suggestion {
   outside: boolean
 }
 
-/** 地理院 AddressSearch のレスポンス型（必要部分のみ） */
 interface GsiFeature {
   geometry: { coordinates: [number, number] }
   properties: { title: string }
@@ -32,7 +31,6 @@ export default function SearchBox({ map }: Props) {
   const boxRef = useRef<HTMLDivElement>(null)
   const timer = useRef<number | undefined>(undefined)
 
-  // 入力をデバウンスして地理院検索
   useEffect(() => {
     window.clearTimeout(timer.current)
     if (!query.trim()) { setItems([]); setOpen(false); return }
@@ -59,7 +57,6 @@ export default function SearchBox({ map }: Props) {
     return () => window.clearTimeout(timer.current)
   }, [query])
 
-  // 枠外クリックで候補を閉じる
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
       if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
@@ -78,11 +75,14 @@ export default function SearchBox({ map }: Props) {
   }
 
   return (
-    <div id="search" ref={boxRef}>
+    <div className="search" ref={boxRef}>
+      <svg className="search-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+      </svg>
       <input
         type="text"
         value={query}
-        placeholder="場所・住所で検索（例：東本町、柏崎市役所）"
+        placeholder="場所・住所で検索"
         autoComplete="off"
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => items.length && setOpen(true)}
@@ -94,7 +94,7 @@ export default function SearchBox({ map }: Props) {
         <div id="suggest">
           {items.map((s, i) => (
             <div key={i} onClick={() => select(s)}>
-              {s.title} {s.outside && <small>（柏崎市外）</small>}
+              {s.title} {s.outside && <small>（市外）</small>}
             </div>
           ))}
         </div>

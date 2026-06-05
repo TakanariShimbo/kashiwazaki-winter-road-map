@@ -3,10 +3,7 @@ import maplibregl from 'maplibre-gl'
 import { buildStyle } from './map/buildStyle'
 import { addDataLayers, applyLayerStyle } from './map/dataLayers'
 import { KASHIWAZAKI, LAYERS, defaultLayerStyles } from './config/layers'
-import SearchBox from './components/SearchBox'
-import LayerPanel from './components/LayerPanel'
-import BasemapSwitcher from './components/BasemapSwitcher'
-import PinPanel from './components/PinPanel'
+import Sidebar from './components/Sidebar'
 import SettingsPanel from './components/SettingsPanel'
 import type { LngLat, LayerStyle } from './types'
 
@@ -31,6 +28,7 @@ export default function App() {
   const [userPos, setUserPos] = useState<LngLat | null>(null)
   const [styles, setStyles] = useState<Record<string, LayerStyle>>(loadStyles)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 820)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -47,15 +45,13 @@ export default function App() {
       showAccuracyCircle: true,
     })
     m.addControl(geolocate, 'top-right')
-    // 現在地が更新されたら保持（目的地ピンの直線距離に使用）
     geolocate.on('geolocate', (e: { coords: GeolocationCoordinates }) => {
       setUserPos([e.coords.longitude, e.coords.latitude])
     })
-    m.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
+    m.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right')
     m.on('load', () => {
       addDataLayers(m)
       setReady(true)
-      // 読み込み時に自動で現在地を取得・表示（許可済みなら即・未許可なら許可ダイアログ）
       try {
         geolocate.trigger()
       } catch {
@@ -83,26 +79,21 @@ export default function App() {
 
   return (
     <>
-      <header id="header">
-        <h1>❄ 柏崎 冬道マップ</h1>
-        <SearchBox map={map} />
-        <span className="sub">MapLibre + 地理院</span>
-      </header>
-
       <div id="map" ref={containerRef} />
 
       {ready && map && (
-        <LayerPanel map={map} styles={styles} onOpenSettings={() => setSettingsOpen(true)} />
+        <Sidebar
+          map={map}
+          styles={styles}
+          userPos={userPos}
+          open={sidebarOpen}
+          onToggle={() => setSidebarOpen((o) => !o)}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
       )}
-      {ready && map && <BasemapSwitcher map={map} />}
-      {ready && map && <PinPanel map={map} userPos={userPos} />}
       {settingsOpen && (
         <SettingsPanel styles={styles} setStyles={setStyles} onClose={() => setSettingsOpen(false)} />
       )}
-
-      <div id="credit">
-        出典：柏崎市オープンデータ（CC-BY 4.0／令和6年12月時点）｜背景：地理院タイル／OpenStreetMap｜検索：地理院
-      </div>
     </>
   )
 }

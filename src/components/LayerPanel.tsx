@@ -25,12 +25,12 @@ export default function LayerPanel({ map, styles, onOpenSettings }: Props) {
   }
 
   return (
-    <div id="layers" className="card">
-      <div className="layers-head">
-        <h2>レイヤー</h2>
-        <button className="gear" onClick={onOpenSettings} title="線のスタイル設定">⚙</button>
+    <section className="sb-section">
+      <div className="sb-head">
+        <h2 className="sb-title">レイヤー</h2>
+        <button className="icon-btn" onClick={onOpenSettings} title="線のスタイル設定">⚙</button>
       </div>
-      <div>
+      <div className="layer-list">
         {LAYERS.map((l) => {
           const s = styles[l.key]
           return (
@@ -49,6 +49,6 @@ export default function LayerPanel({ map, styles, onOpenSettings }: Props) {
           )
         })}
       </div>
-    </div>
+    </section>
   )
 }

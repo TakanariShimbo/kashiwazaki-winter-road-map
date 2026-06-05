@@ -17,8 +17,8 @@ export default function BasemapSwitcher({ map }: Props) {
   }
 
   return (
-    <div id="basemaps" className="card">
-      <h2>背景地図（タイル）</h2>
+    <section className="sb-section">
+      <h2 className="sb-title">背景地図</h2>
       <div className="seg">
         {BASEMAPS.map((b) => (
           <button key={b.key} className={b.key === active ? 'active' : ''} onClick={() => select(b.key)}>
@@ -26,6 +26,6 @@ export default function BasemapSwitcher({ map }: Props) {
           </button>
         ))}
       </div>
-    </div>
+    </section>
   )
 }

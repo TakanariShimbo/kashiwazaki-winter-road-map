@@ -76,12 +76,13 @@ export default function PinPanel({ map, userPos }: Props) {
   const dist = pin && userPos ? haversine(userPos, pin) : null
 
   return (
-    <div id="pin" className="card">
+    <section className="sb-section">
+      <h2 className="sb-title">目的地ピン</h2>
       <button
         className={`pin-toggle ${active ? 'on' : ''}`}
         onClick={() => setActive((a) => !a)}
       >
-        📍 目的地ピン{active ? '（タップで設置）' : ''}
+        📍 {active ? '地図をタップして設置' : '目的地を置く'}
       </button>
 
       {(active || pin) && (
@@ -100,6 +101,6 @@ export default function PinPanel({ map, userPos }: Props) {
           )}
         </div>
       )}
-    </div>
+    </section>
   )
 }
