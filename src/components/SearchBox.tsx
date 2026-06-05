@@ -27,6 +27,7 @@ export default function SearchBox({ map }: Props) {
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<Suggestion[]>([])
   const [open, setOpen] = useState(false)
+  const [hasMarker, setHasMarker] = useState(false)
   const markerRef = useRef<maplibregl.Marker | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const timer = useRef<number | undefined>(undefined)
@@ -70,7 +71,17 @@ export default function SearchBox({ map }: Props) {
     map.flyTo({ center: s.coord, zoom: 16, duration: 1200 })
     markerRef.current?.remove()
     markerRef.current = new maplibregl.Marker({ color: '#e8341c' }).setLngLat(s.coord).addTo(map)
+    setHasMarker(true)
     setQuery(s.title)
+    setOpen(false)
+  }
+
+  const clear = () => {
+    markerRef.current?.remove()
+    markerRef.current = null
+    setHasMarker(false)
+    setQuery('')
+    setItems([])
     setOpen(false)
   }
 
@@ -88,8 +99,12 @@ export default function SearchBox({ map }: Props) {
         onFocus={() => items.length && setOpen(true)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && items[0]) { e.preventDefault(); select(items[0]) }
+          if (e.key === 'Escape') clear()
         }}
       />
+      {(query || hasMarker) && (
+        <button className="search-clear" onClick={clear} aria-label="検索をクリア" title="クリア">×</button>
+      )}
       {open && items.length > 0 && (
         <div id="suggest">
           {items.map((s, i) => (
