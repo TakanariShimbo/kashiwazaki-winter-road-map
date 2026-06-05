@@ -21,17 +21,22 @@ export default function App() {
       zoom: 13,
     })
     m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
-    m.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-      }),
-      'top-right',
-    )
+    const geolocate = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+      showAccuracyCircle: true,
+    })
+    m.addControl(geolocate, 'top-right')
     m.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
     m.on('load', () => {
       addDataLayers(m)
       setReady(true)
+      // 読み込み時に自動で現在地を取得・表示（許可済みなら即・未許可なら許可ダイアログ）
+      try {
+        geolocate.trigger()
+      } catch {
+        /* 自動取得に失敗してもボタンから手動取得できるので無視 */
+      }
     })
     setMap(m)
     return () => {
